@@ -1,0 +1,233 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATM Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f766e, #e5e7eb);
+            font-family: 'Inter', sans-serif;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .btn-primary {
+            background-color: #0d9488;
+            font-weight: bold;
+        }
+        .btn-primary:hover {
+            background-color: #0f766e;
+            transform: scale(1.05);
+        }
+        .btn-deposit {
+            background-color: #10b981;
+            font-weight: bold;
+        }
+        .btn-deposit:hover {
+            background-color: #059669;
+            transform: scale(1.05);
+        }
+        .btn-withdraw {
+            background-color: #f59e0b;
+            font-weight: bold;
+        }
+        .btn-withdraw:hover {
+            background-color: #d97706;
+            transform: scale(1.05);
+        }
+        .btn-transfer {
+            background-color: #3b82f6;
+            font-weight: bold;
+        }
+        .btn-transfer:hover {
+            background-color: #2563eb;
+            transform: scale(1.05);
+        }
+        .table-header {
+            background: #0d9488;
+            color: white;
+        }
+        .table-row:nth-child(even) {
+            background-color: #f9fafb;
+        }
+        .table-row:hover {
+            background-color: #e5e7eb;
+        }
+        .header {
+            background: rgba(15, 118, 110, 0.9);
+            backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <header class="header py-4 px-6 flex justify-between items-center">
+        <div class="flex items-center">
+            <svg class="w-8 h-8 text-white mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+            </svg>
+            <h1 class="text-2xl font-bold text-white">ATM Dashboard</h1>
+        </div>
+        <a href="/signout" class="btn-primary text-white px-4 py-2 rounded-lg transition duration-300">Sign Out</a>
+    </header>
+    <div class="container mx-auto p-6 max-w-7xl">
+        <div class="card p-8 rounded-xl shadow-2xl mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Welcome, {{ user.name }}</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <p class="text-lg"><strong>Account Number:</strong> {{ user.account_number }}</p>
+                <p class="text-lg"><strong>Balance:</strong> ${{ "%.2f" % user.balance }}</p>
+            </div>
+        </div>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="{{ 'bg-red-100 text-red-700' if category == 'error' else 'bg-green-100 text-green-700' }} p-4 rounded-lg mb-6 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            {% if category == 'error' %}
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                            {% else %}
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            {% endif %}
+                        </svg>
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Deposit Form -->
+            <div class="card p-6 rounded-xl shadow-2xl">
+                <div class="flex items-center mb-4">
+                    <svg class="w-6 h-6 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <h3 class="text-xl font-semibold text-gray-800">Deposit</h3>
+                </div>
+                <form action="/deposit" method="POST" class="space-y-4">
+                    <div>
+                        <label for="deposit_amount" class="block text-sm font-medium text-gray-700">Amount</label>
+                        <input type="number" id="deposit_amount" name="amount" step="0.01" min="0.01"
+                               class="mt-1 p-3 w-full border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 shadow-sm" 
+                               placeholder="Enter amount" required>
+                    </div>
+                    <button type="submit" class="w-full btn-deposit text-white p-3 rounded-lg transition duration-300">Deposit</button>
+                </form>
+            </div>
+            <!-- Withdraw Form -->
+            <div class="card p-6 rounded-xl shadow-2xl">
+                <div class="flex items-center mb-4">
+                    <svg class="w-6 h-6 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    <h3 class="text-xl font-semibold text-gray-800">Withdraw</h3>
+                </div>
+                <form action="/withdraw" method="POST" class="space-y-4">
+                    <div>
+                        <label for="withdraw_amount" class="block text-sm font-medium text-gray-700">Amount</label>
+                        <input type="number" id="withdraw_amount" name="amount" step="0.01" min="0.01"
+                               class="mt-1 p-3 w-full border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 shadow-sm" 
+                               placeholder="Enter amount" required>
+                    </div>
+                    <button type="submit" class="w-full btn-withdraw text-white p-3 rounded-lg transition duration-300">Withdraw</button>
+                </form>
+            </div>
+            <!-- Transfer Form -->
+            <div class="card p-6 rounded-xl shadow-2xl">
+                <div class="flex items-center mb-4">
+                    <svg class="w-6 h-6 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m-16 1h12m0 0l-4-4m4 4l-4 4"></path>
+                    </svg>
+                    <h3 class="text-xl font-semibold text-gray-800">Transfer</h3>
+                </div>
+                <form action="/transfer" method="POST" class="space-y-4">
+                    <div>
+                        <label for="transfer_amount" class="block text-sm font-medium text-gray-700">Amount</label>
+                        <input type="number" id="transfer_amount" name="amount" step="0.01" min="0.01"
+                               class="mt-1 p-3 w-full border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm" 
+                               placeholder="Enter amount" required>
+                    </div>
+                    <div>
+                        <label for="to_account" class="block text-sm font-medium text-gray-700">To Account Number</label>
+                        <input type="text" id="to_account" name="to_account" 
+                               class="mt-1 p-3 w-full border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm" 
+                               pattern="\d{8,}" title="Account number must be numeric and have 8 or more digits" 
+                               placeholder="Enter recipient account number" required>
+                    </div>
+                    <button type="submit" class="w-full btn-transfer text-white p-3 rounded-lg transition duration-300">Transfer</button>
+                </form>
+            </div>
+        </div>
+        <div class="card p-8 rounded-xl shadow-2xl">
+            <h3 class="text-2xl font-semibold text-gray-800 mb-4">Transaction History</h3>
+            {% if transactions %}
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="table-header">
+                            <tr>
+                                <th class="p-4">Type</th>
+                                <th class="p-4">Amount</th>
+                                <th class="p-4">Date</th>
+                                <th class="p-4">To/From Account</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transaction in transactions %}
+                                <tr class="table-row border-b">
+                                    <td class="p-4">{{ transaction.type }}</td>
+                                    <td class="p-4">${{ "%.2f" % transaction.amount }}</td>
+                                    <td class="p-4">{{ transaction.date }}</td>
+                                    <td class="p-4">{{ transaction.to_account or '-' }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-gray-600">No transactions yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

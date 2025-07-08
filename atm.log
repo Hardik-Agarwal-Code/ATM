@@ -1,0 +1,18 @@
+2025-07-08 23:02:37,696 - INFO - Database initialized successfully
+2025-07-08 23:02:37,790 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-07-08 23:02:37,790 - INFO - [33mPress CTRL+C to quit[0m
+2025-07-08 23:02:37,795 - INFO -  * Restarting with stat
+2025-07-08 23:02:38,443 - INFO - Database initialized successfully
+2025-07-08 23:02:38,483 - WARNING -  * Debugger is active!
+2025-07-08 23:02:38,491 - INFO -  * Debugger PIN: 933-513-497
+2025-07-08 23:02:53,789 - INFO - 127.0.0.1 - - [08/Jul/2025 23:02:53] "GET / HTTP/1.1" 200 -
+2025-07-08 23:02:54,304 - INFO - 127.0.0.1 - - [08/Jul/2025 23:02:54] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-07-08 23:03:07,308 - INFO - 127.0.0.1 - - [08/Jul/2025 23:03:07] "GET /signup HTTP/1.1" 200 -
+2025-07-08 23:03:29,584 - INFO - 127.0.0.1 - - [08/Jul/2025 23:03:29] "POST /generate_pin HTTP/1.1" 200 -
+2025-07-08 23:03:33,862 - INFO - New account created: 12345678 for harry
+2025-07-08 23:03:33,862 - INFO - 127.0.0.1 - - [08/Jul/2025 23:03:33] "[32mPOST /signup HTTP/1.1[0m" 302 -
+2025-07-08 23:03:33,877 - INFO - 127.0.0.1 - - [08/Jul/2025 23:03:33] "GET / HTTP/1.1" 200 -
+2025-07-08 23:03:46,322 - INFO - User with account 12345678 signed in
+2025-07-08 23:03:46,324 - INFO - 127.0.0.1 - - [08/Jul/2025 23:03:46] "[32mPOST /signin HTTP/1.1[0m" 302 -
+2025-07-08 23:03:46,676 - INFO - 127.0.0.1 - - [08/Jul/2025 23:03:46] "GET /dashboard HTTP/1.1" 200 -

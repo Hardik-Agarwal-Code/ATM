@@ -1,0 +1,144 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATM Sign-Up</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f766e, #e5e7eb);
+            font-family: 'Inter', sans-serif;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .btn-primary {
+            background-color: #0d9488;
+            font-weight: bold;
+        }
+        .btn-primary:hover {
+            background-color: #0f766e;
+            transform: scale(1.05);
+        }
+        .btn-secondary {
+            background-color: #3b82f6;
+            font-weight: bold;
+        }
+        .btn-secondary:hover {
+            background-color: #2563eb;
+            transform: scale(1.05);
+        }
+    </style>
+    <script>
+        async function generatePin() {
+            const response = await fetch('/generate_pin', { method: 'POST' });
+            const pin = await response.text();
+            document.getElementById('pin').value = pin;
+            document.getElementById('pin_display').classList.remove('hidden');
+            document.getElementById('proceed_button').classList.remove('hidden');
+        }
+    </script>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+    <div class="card p-8 rounded-xl shadow-2xl w-full max-w-md">
+        <div class="flex items-center justify-center mb-6">
+            <svg class="w-8 h-8 text-teal-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+            </svg>
+            <h2 class="text-3xl font-bold text-gray-800">ATM Sign-Up</h2>
+        </div>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="{{ 'bg-red-100 text-red-700' if category == 'error' else 'bg-green-100 text-green-700' }} p-4 rounded-lg mb-6 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            {% if category == 'error' %}
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                            {% else %}
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            {% endif %}
+                        </svg>
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <form action="/signup" method="POST" class="space-y-6">
+            <div>
+                <label for="name" class="block text-sm font-medium text-gray-700">Full Name</label>
+                <input type="text" id="name" name="name" 
+                       class="mt-1 p-3 w-full border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 shadow-sm" 
+                       placeholder="Enter your full name" required>
+            </div>
+            <div>
+                <label for="account_number" class="block text-sm font-medium text-gray-700">Account Number</label>
+                <input type="text" id="account_number" name="account_number" 
+                       class="mt-1 p-3 w-full border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 shadow-sm" 
+                       pattern="\d{8,}" title="Account number must be numeric and have 8 or more digits" 
+                       placeholder="Enter 8+ digit account number" required>
+            </div>
+            <div>
+                <label for="pin" class="block text-sm font-medium text-gray-700">PIN</label>
+                <input type="text" id="pin" name="pin" readonly
+                       class="mt-1 p-3 w-full border rounded-lg bg-gray-100 shadow-sm" placeholder="Click Generate PIN">
+                <div id="pin_display" class="hidden mt-2 text-sm text-gray-600">
+                    Your PIN has been generated. Please note it down securely.
+                </div>
+            </div>
+            <button type="button" onclick="generatePin()" 
+                    class="w-full btn-secondary text-white p-3 rounded-lg transition duration-300">
+                Generate PIN
+            </button>
+            <button type="submit" id="proceed_button" 
+                    class="w-full btn-primary text-white p-3 rounded-lg transition duration-300 hidden">
+                Proceed
+            </button>
+        </form>
+        <p class="mt-4 text-center text-sm text-gray-600">
+            Already have an account? <a href="/" class="text-teal-600 hover:underline">Sign In</a>
+        </p>
+    </div>
+</body>
+</html>
