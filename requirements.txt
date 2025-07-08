@@ -1,15 +1,9 @@
 blinker==1.9.0
-cffi==1.16.0
 click==8.2.1
 colorama==0.4.6
-cryptography==43.0.0
 Flask==3.1.1
+gunicorn==22.0.0
 itsdangerous==2.2.0
 Jinja2==3.1.6
 MarkupSafe==3.0.2
-mysql==0.0.3
-mysql-connector-python==9.3.0
-mysqlclient==2.2.7
-pycparser==2.22
-tqdm==4.67.1
 Werkzeug==3.1.3
